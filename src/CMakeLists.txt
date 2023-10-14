@@ -195,6 +195,7 @@ set(examples_files
     examples/hello/hello.cpp # contains conflicting main()
     examples/hello/HelloSPTP.cpp
     examples/hello/HelloSPTP.hpp
+    examples/semfold/semfold.cpp
     examples/napi_hello/napi_hello.cpp
     examples/napi_hello/napi_hello_database.cpp
     examples/mnist/MNIST_SP.cpp
@@ -325,6 +326,47 @@ endif()
 # The tests were placed in a separate file to avoid clutering up this file.
 add_subdirectory(test)
 
+find_package( OpenCV REQUIRED )
+include_directories( ${OpenCV_INCLUDE_DIRS} )
+
+find_package(nlohmann_json 3.2.0 REQUIRED)
+
+set(src_executable_semfold semfold)
+add_executable(${src_executable_semfold} examples/semfold/semfold.cpp)
+# link with the static library
+target_link_libraries(${src_executable_semfold}
+    ${INTERNAL_LINKER_FLAGS}
+    ${core_library}
+    ${COMMON_OS_LIBS}
+    ${OpenCV_LIBS}
+    nlohmann_json::nlohmann_json
+)
+
+target_compile_options( ${src_executable_semfold} PUBLIC ${INTERNAL_CXX_FLAGS})
+target_compile_definitions(${src_executable_semfold} PRIVATE ${COMMON_COMPILER_DEFINITIONS})
+target_include_directories(${src_executable_semfold} PRIVATE
+		${CORE_LIB_INCLUDES}
+		SYSTEM ${EXTERNAL_INCLUDES}
+		)
+
+if(MSVC)
+else()
+  set(src_executable_semfold dynamic_semfold)
+  add_executable(${src_executable_semfold} examples/semfold/semfold.cpp)
+  # for Linux,OSx, link with the shared library
+  target_link_libraries(${src_executable_semfold}
+    ${INTERNAL_LINKER_FLAGS}
+    ${src_lib_shared}
+    ${COMMON_OS_LIBS}
+    ${OpenCV_LIBS}
+  )
+  target_compile_options( ${src_executable_semfold} PUBLIC ${INTERNAL_CXX_FLAGS})
+  target_compile_definitions(${src_executable_semfold} PRIVATE ${COMMON_COMPILER_DEFINITIONS})
+  target_include_directories(${src_executable_semfold} PRIVATE
+		${CORE_LIB_INCLUDES}
+		SYSTEM ${EXTERNAL_INCLUDES}
+		)
+endif()
 
 ########### EXAMPLES ##############################################
 ## Example custom executable
@@ -339,6 +381,7 @@ target_link_libraries(${src_executable_hello}
     ${core_library}
     ${COMMON_OS_LIBS}
 )
+
     
 # for future reference; to link to shared library, (Not on MSVC)
 #          link with ${src_lib_shared} rather than ${core_library}
@@ -474,6 +517,7 @@ install(TARGETS
         
 install(TARGETS
         ${src_executable_hello}
+        ${src_executable_semfold}
         ${src_executable_napi_hello}
         ${src_executable_napi_hello_database}
         ${src_executable_mnistsp}
@@ -486,6 +530,7 @@ if(MSVC)
 else()	
   install(TARGETS
         ${src_dyn_executable_hello}
+        ${src_dyn_executable_semfold}
         ${src_lib_shared}
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
